@@ -1,0 +1,147 @@
+/* MAIN BACKGROUND */
+
+.main-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+
+    /* soft premium gradient */
+    background: linear-gradient(135deg, #eef2ff, #f8fafc);
+}
+
+/* CARD */
+.form-container{
+    width: 340px;
+    padding: 2rem;
+    border-radius: 16px;
+    background: #ffffff;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+    /* soft layered shadow */
+    box-shadow: 
+        0 10px 25px rgba(0,0,0,0.08),
+        0 4px 10px rgba(0,0,0,0.04);
+}
+
+/* HEADER */
+.header{
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    text-align: center;
+}
+
+.header h1{
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.header p{
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+/* FORM */
+form{
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+/* INPUT GROUP */
+.input-group{
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* PASSWORD ROW */
+.password-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* LABEL */
+.input-group label{
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+/* FORGOT */
+.forgot{
+    font-size: 0.75rem;
+    color: #6366f1;
+    cursor: pointer;
+}
+
+/* INPUT */
+.input-group input{
+    padding: 0.7rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #111827;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+/* INPUT FOCUS */
+.input-group input:focus{
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+}
+
+/* PLACEHOLDER */
+.input-group input::placeholder{
+    color: #9ca3af;
+}
+
+/* BUTTON */
+.button{
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+/* PRIMARY BUTTON */
+.button.primary-button{
+    background: linear-gradient(90deg, #6366f1, #7c3aed);
+    color: white;
+
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+}
+
+/* BUTTON INTERACTION */
+.button:hover{
+    transform: translateY(-1px);
+}
+
+.button:active{
+    transform: scale(0.97);
+}
+
+/* SIGNUP TEXT */
+.signup-text{
+    text-align: center;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.signup-text span{
+    color: #6366f1;
+    font-weight: 500;
+    cursor: pointer;
+}
