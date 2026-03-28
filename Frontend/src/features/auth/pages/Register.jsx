@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router'
 // import "../authStyles/login.css"
 const Register = () => {
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: ""
   })
@@ -16,12 +17,30 @@ const Register = () => {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(formData)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData)
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        navigate("/login")
+      } else {
+        alert(data.message || "Registration failed")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("An error occurred during registration")
+    }
   }
 
-const navigate= useNavigate();
+  const navigate = useNavigate();
 
   return (
     <main className='main-container'>
@@ -33,19 +52,20 @@ const navigate= useNavigate();
         </div>
 
         <form onSubmit={handleSubmit}>
-            <div className='input-group'>
-                <label htmlFor="username">Username</label>
-                <input
-                type="text"
-                id="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Enter username"/>
-            </div>
+          <div className='input-group'>
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Enter username" />
+          </div>
 
           <div className='input-group'>
             <label htmlFor="email">Email</label>
-            <input 
+            <input
               type="email"
               id="email"
               name="email"
@@ -58,10 +78,9 @@ const navigate= useNavigate();
           <div className='input-group'>
             <div className="password-row">
               <label htmlFor="password">Password</label>
-              <span className="forgot">Forgot?</span>
             </div>
 
-            <input 
+            <input
               type="password"
               id="password"
               name="password"
@@ -72,7 +91,7 @@ const navigate= useNavigate();
           </div>
 
           <button type="submit" className="button primary-button">
-            Login
+            Sign Up
           </button>
 
         </form>

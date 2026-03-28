@@ -25,13 +25,21 @@ authRouter.post("/login", authController.loginUserController)
  * @access Public
  */
 authRouter.get("/logout", authController.logoutUserController)
+
 /** 
  * @route GET /api/auth/get-me
- *  @description get the current logged in user details
+ * @description get the current logged in user details
  * @access private
  */
+authRouter.get("/get-me", authMiddleware.authUser, authController.getMeController)
 
-authRouter.get("/get-me",authMiddleware.authUser,authController.getMeController)
+
+/**
+ * @route POST /api/auth/google
+ * @description Verify Google token, find or create user, return own JWT
+ * @access Public
+ */
+authRouter.post("/google", authController.googleAuthController)
+
 
 module.exports = authRouter
-

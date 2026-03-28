@@ -9,11 +9,24 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         unique: [true, "email already exists"],
-        require: true
+        required: true
     },
     password: {
         type: String,
-        required: [true, "password is required"]
+        required: false
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    picture: {
+        type: String
+    },
+    authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
     }
 })
 

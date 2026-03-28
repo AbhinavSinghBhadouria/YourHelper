@@ -1,11 +1,50 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import "../authStyles/login.css"
-import { useNavigate,Link } from 'react-router'
+import { useNavigate, Link } from 'react-router'
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   })
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handlingClientCredentials,
+      })
+
+      window.google.accounts.id.renderButton(
+        document.getElementById("google_sign_in"),
+        { theme: 'outline', size: 'large' }
+      )
+    }
+  }, [])
+
+  const handlingClientCredentials = async (response) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token: response.credential })
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        navigate("/dashboard")
+      } else {
+        alert(data.message || "Google login failed")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("An error occurred during Google login")
+    }
+  }
+
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -15,12 +54,28 @@ const Login = () => {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log(formData)
-  }
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData)
+      })
 
-  const navigate= useNavigate()
+      const data = await res.json()
+
+      if (res.ok) {
+        navigate("/dashboard")
+      } else {
+        alert(data.message || "Login failed")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("An error occurred during login")
+    }
+  }
 
   return (
     <main className='main-container'>
@@ -35,7 +90,7 @@ const Login = () => {
 
           <div className='input-group'>
             <label htmlFor="email">Email</label>
-            <input 
+            <input
               type="email"
               id="email"
               name="email"
@@ -51,7 +106,7 @@ const Login = () => {
               <span className="forgot">Forgot?</span>
             </div>
 
-            <input 
+            <input
               type="password"
               id="password"
               name="password"
@@ -70,6 +125,10 @@ const Login = () => {
         <p className="signup-text">
           Don’t have an account? <Link to={"/register"}><span>Sign Up</span></Link>
         </p>
+
+        <div id="google_sign_in">
+
+        </div>
 
       </div>
     </main>

@@ -2,15 +2,17 @@ const jwt = require("jsonwebtoken")
 const userModel = require("../models/user.model")
 const bcrypt = require("bcryptjs")
 const tokenBlacklistModel = require("../models/blacklist.model")
+const { OAuth2Client } = require("google-auth-library")
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
 /**
- * 
- * @name registerUserController 
+ * @name registerUserController
  * @description register a new user
  * @access Public
  */
-
 async function registerUserController(req, res) {
-    try { 
+    try {
         const { username, email, password } = req.body
 
         if (!username || !password || !email) {
@@ -45,14 +47,12 @@ async function registerUserController(req, res) {
         })
 
         const token = jwt.sign(
-            {
-                id: user._id, username: user.username
-            },
+            { id: user._id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: "1d" }
         )
 
-        res.cookie("token", token) // (kept as-is)
+        res.cookie("token", token)
 
         res.status(201).json({
             message: "User registered successfully",
@@ -70,9 +70,11 @@ async function registerUserController(req, res) {
 
 /**
  * @name loginUserController
+ * @description login a user with email and password
+ * @access Public
  */
 async function loginUserController(req, res) {
-    try { 
+    try {
         const { email, password } = req.body
 
         const user = await userModel.findOne({ email })
@@ -80,6 +82,13 @@ async function loginUserController(req, res) {
         if (!user) {
             return res.status(400).json({
                 message: "Invalid email or password"
+            })
+        }
+
+        // Google-only users have no password
+        if (!user.password) {
+            return res.status(400).json({
+                message: "This account uses Google Sign-In. Please login with Google."
             })
         }
 
@@ -100,7 +109,7 @@ async function loginUserController(req, res) {
         res.cookie("token", token)
 
         res.status(200).json({
-            message: "user logged in successfully",
+            message: "User logged in successfully",
             user: {
                 id: user._id,
                 username: user.username,
@@ -115,9 +124,11 @@ async function loginUserController(req, res) {
 
 /**
  * @name logoutUserController
+ * @description clear token from cookie and blacklist it
+ * @access Public
  */
 async function logoutUserController(req, res) {
-    try { // ✅ FIX: added error handling
+    try {
         const token = req.cookies.token
 
         if (token) {
@@ -126,7 +137,6 @@ async function logoutUserController(req, res) {
 
         res.clearCookie("token")
 
-        // ✅ FIX: missing response
         res.status(200).json({
             message: "Logged out successfully"
         })
@@ -138,10 +148,11 @@ async function logoutUserController(req, res) {
 
 /**
  * @name getMeController
+ * @description get the current logged in user details
+ * @access Private
  */
 async function getMeController(req, res) {
     try {
-    
         const user = await userModel.findById(req.user.id)
 
         if (!user) {
@@ -164,9 +175,71 @@ async function getMeController(req, res) {
     }
 }
 
+/**
+ * @name googleAuthController
+ * @description Verify Google token, find or create user, return own JWT via cookie
+ * @access Public
+ */
+async function googleAuthController(req, res) {
+    try {
+        const { token } = req.body
+
+        if (!token) {
+            return res.status(400).json({ message: "Google token is required" })
+        }
+
+        // 1. Verify the token Google sent is genuine
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID
+        })
+
+        const { email, name, picture, sub: googleId } = ticket.getPayload()
+
+        let user = await userModel.findOne({ email })
+
+        if (!user) {
+            user = await userModel.create({
+                username: name,
+                email,
+                picture,
+                googleId,
+                password: null,
+                authProvider: "google"
+            })
+        } else {
+            if (!user.googleId) {
+                user.googleId = googleId
+                await user.save()
+            }
+        }
+
+        const jwtToken = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        )
+
+        res.cookie("token", jwtToken)
+
+        res.status(200).json({
+            message: "Google login successful",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+
+    } catch (error) {
+        res.status(401).json({ message: "Google authentication failed" })
+    }
+}
+
 module.exports = {
     registerUserController,
     loginUserController,
     logoutUserController,
-    getMeController
+    getMeController,
+    googleAuthController
 }
