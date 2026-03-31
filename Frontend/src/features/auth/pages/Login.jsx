@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import "../authStyles/login.css"
-import { useNavigate, Link } from 'react-router'
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
   })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
   const navigate = useNavigate()
 
   useEffect(() => {
     if (window.google) {
       window.google.accounts.id.initialize({
         client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handlingClientCredentials,
+        callback: handleGoogleLogin,
       })
 
       window.google.accounts.id.renderButton(
@@ -23,7 +27,10 @@ const Login = () => {
     }
   }, [])
 
-  const handlingClientCredentials = async (response) => {
+  const handleGoogleLogin = async (response) => {
+    setLoading(true)
+    setError("")
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
         method: "POST",
@@ -37,14 +44,15 @@ const Login = () => {
       if (res.ok) {
         navigate("/dashboard")
       } else {
-        alert(data.message || "Google login failed")
+        setError(data.message || "Google login failed")
       }
     } catch (err) {
       console.error(err)
-      alert("An error occurred during Google login")
+      setError("An error occurred during Google login")
+    } finally {
+      setLoading(false)
     }
   }
-
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -56,6 +64,16 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError("")
+
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      setError("All fields are required")
+      return
+    }
+
+    setLoading(true)
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
         method: "POST",
@@ -69,11 +87,13 @@ const Login = () => {
       if (res.ok) {
         navigate("/dashboard")
       } else {
-        alert(data.message || "Login failed")
+        setError(data.message || "Login failed")
       }
     } catch (err) {
       console.error(err)
-      alert("An error occurred during login")
+      setError("An error occurred during login")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -97,6 +117,7 @@ const Login = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder='Enter your email'
+              disabled={loading}
             />
           </div>
 
@@ -113,22 +134,27 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
+              disabled={loading}
             />
           </div>
 
-          <button type="submit" className="button primary-button">
-            Login
+          {error && <p className="error-text">{error}</p>}
+
+          <button 
+            type="submit" 
+            className="button primary-button"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
 
         </form>
 
         <p className="signup-text">
-          Don’t have an account? <Link to={"/register"}><span>Sign Up</span></Link>
+          Don’t have an account? <Link to="/register"><span>Sign Up</span></Link>
         </p>
 
-        <div id="google_sign_in">
-
-        </div>
+        <div id="google_sign_in" />
 
       </div>
     </main>

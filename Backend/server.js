@@ -2,6 +2,7 @@ require("dotenv").config();
 const app = require("./src/app");
 const connectDB = require("./src/config/database");
 
+
 const PORT = 3000;
 
 connectDB().then(() => {
@@ -11,3 +12,4 @@ connectDB().then(() => {
 }).catch(err => {
   console.error("Failed to connect to database", err);
 });
+
