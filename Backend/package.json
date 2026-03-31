@@ -1,13 +1,20 @@
 {
   "dependencies": {
+    "@google/genai": "^1.47.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
     "i": "^0.3.7",
     "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.1.1",
     "mongoose": "^9.3.2",
-    "nodemon": "^3.1.14"
+    "multer": "^2.1.1",
+    "nodemon": "^3.1.14",
+    "pdf-parse": "^2.4.5",
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.2"
   },
   "name": "yourhelper",
   "version": "1.0.0",

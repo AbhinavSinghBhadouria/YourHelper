@@ -1,13 +1,19 @@
+
 import React, { useState } from 'react'
 import "../authStyles/register.css"
 import { useNavigate, Link } from 'react-router'
-// import "../authStyles/login.css"
+import { toast } from "react-toastify"
+
 const Register = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: ""
   })
+
+  const [loading, setLoading] = useState(false)
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -19,6 +25,8 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
+
     try {
       const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/register`, {
         method: "POST",
@@ -27,23 +35,35 @@ const Register = () => {
         body: JSON.stringify(formData)
       })
 
-      const data = await res.json()
+      let data = {}
+      try {
+        data = await res.json()
+      } catch {}
 
       if (res.ok) {
-        navigate("/login")
+        toast.success("Account created successfully ✅")
+        setTimeout(() => navigate("/login"), 1500)
       } else {
-        alert(data.message || "Registration failed")
+        toast.error(data.message || "Registration failed ❌")
       }
     } catch (err) {
       console.error(err)
-      alert("An error occurred during registration")
+      toast.error("Something went wrong 🚨")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const navigate = useNavigate();
-
   return (
     <main className='main-container'>
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loader"></div>
+          <p>Creating your account...</p>
+        </div>
+      )}
+
       <div className='form-container'>
 
         <div className="header">
@@ -60,7 +80,9 @@ const Register = () => {
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Enter username" />
+              placeholder="Enter username"
+              required
+            />
           </div>
 
           <div className='input-group'>
@@ -72,14 +94,12 @@ const Register = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder='Enter your email'
+              required
             />
           </div>
 
           <div className='input-group'>
-            <div className="password-row">
-              <label htmlFor="password">Password</label>
-            </div>
-
+            <label htmlFor="password">Password</label>
             <input
               type="password"
               id="password"
@@ -87,11 +107,16 @@ const Register = () => {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
+              required
             />
           </div>
 
-          <button type="submit" className="button primary-button">
-            Sign Up
+          <button 
+            type="submit" 
+            className="button primary-button"
+            disabled={loading}
+          >
+            {loading ? "Creating account..." : "Sign Up"}
           </button>
 
         </form>
@@ -106,3 +131,4 @@ const Register = () => {
 }
 
 export default Register
+
