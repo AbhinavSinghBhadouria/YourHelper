@@ -38,11 +38,11 @@ const Register = () => {
       let data = {}
       try {
         data = await res.json()
-      } catch {}
+      } catch { }
 
       if (res.ok) {
         toast.success("Account created successfully ✅")
-        setTimeout(() => navigate("/login"), 1500)
+        setTimeout(() => navigate("/dashboard"), 1500) // like agr user pheli barr register krr rha h then why do we have the need to send the user to the login page
       } else {
         toast.error(data.message || "Registration failed ❌")
       }
@@ -111,8 +111,8 @@ const Register = () => {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="button primary-button"
             disabled={loading}
           >
