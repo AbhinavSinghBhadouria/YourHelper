@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import "../authStyles/login.css"
 
+let googleInitialized = false;
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -14,17 +16,24 @@ const Login = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleLogin,
-      })
+    const initializeGoogle = () => {
+      if (window.google) {
+        if (!googleInitialized) {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+            callback: handleGoogleLogin,
+          })
+          googleInitialized = true;
+        }
 
-      window.google.accounts.id.renderButton(
-        document.getElementById("google_sign_in"),
-        { theme: 'outline', size: 'large' }
-      )
+        window.google.accounts.id.renderButton(
+          document.getElementById("google_sign_in"),
+          { theme: 'outline', size: 'large' }
+        )
+      }
     }
+
+    initializeGoogle();
   }, [])
 
   const handleGoogleLogin = async (response) => {
@@ -140,8 +149,8 @@ const Login = () => {
 
           {error && <p className="error-text">{error}</p>}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="button primary-button"
             disabled={loading}
           >

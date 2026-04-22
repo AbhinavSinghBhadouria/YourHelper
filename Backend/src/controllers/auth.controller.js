@@ -6,6 +6,7 @@ const { OAuth2Client } = require("google-auth-library")
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
+
 /**
  * @name registerUserController
  * @description register a new user
@@ -199,8 +200,23 @@ async function googleAuthController(req, res) {
         let user = await userModel.findOne({ email })
 
         if (!user) {
+            // Try to find a unique username: use display name → email prefix → add suffix
+            let username = name
+            let existingUser = await userModel.findOne({ username })
+
+            if (existingUser) {
+                // Fall back to email prefix (part before @)
+                username = email.split("@")[0]
+                existingUser = await userModel.findOne({ username })
+
+                if (existingUser) {
+                    // Append short random suffix to guarantee uniqueness
+                    username = `${email.split("@")[0]}_${Math.random().toString(36).slice(2, 6)}`
+                }
+            }
+
             user = await userModel.create({
-                username: name,
+                username,
                 email,
                 picture,
                 googleId,
@@ -232,7 +248,8 @@ async function googleAuthController(req, res) {
         })
 
     } catch (error) {
-        res.status(401).json({ message: "Google authentication failed" })
+        console.error("Google auth error:", error.message)
+        res.status(500).json({ message: "Google authentication failed", error: error.message })
     }
 }
 

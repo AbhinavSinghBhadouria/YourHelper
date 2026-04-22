@@ -1,0 +1,130 @@
+/* =========================================
+   BLOG STYLES - LIGHT THEME
+   ========================================= */
+
+.blog-page {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-hero {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 5rem 2rem;
+    text-align: center;
+}
+
+.blog-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin: 0 0 1rem 0;
+    letter-spacing: -0.02em;
+}
+
+.blog-subtitle {
+    font-size: 1.1rem;
+    color: #6b7280;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.blog-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2.5rem;
+}
+
+.blog-card {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+}
+
+.blog-image-placeholder {
+    width: 100%;
+    height: 200px;
+    background-color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle gradient to make placeholders look nice */
+.blog-image-placeholder::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(90, 79, 243, 0.05) 0%, rgba(90, 79, 243, 0.15) 100%);
+}
+
+.blog-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.blog-category {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #5a4ff3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.8rem;
+}
+
+.blog-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: #111827;
+    line-height: 1.4;
+}
+
+.blog-card-excerpt {
+    font-size: 0.95rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin: 0 0 1.5rem 0;
+    flex-grow: 1;
+}
+
+.blog-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.blog-author {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.blog-date {
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
