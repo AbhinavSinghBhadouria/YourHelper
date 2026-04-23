@@ -334,13 +334,13 @@ async function generateResumePdf(selfDescription, resume, jobDescription) {
  */
 async function buildLocalFallbackResume(selfDescription, resume, jobDescription) {
   const lines = resume.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const name = lines[0] || "Abhinav Singh Bhadouria";
+  const name = lines[0] || "Your Full Name";
 
   const emailMatch = resume.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  const email = emailMatch ? emailMatch[0] : "abhinavsinghbhadouria.cs@gmail.com";
+  const email = emailMatch ? emailMatch[0] : "candidate@example.com";
 
   const phoneMatch = resume.match(/(\+?\d{1,3}[- ]?)?\d{10}/);
-  const phone = phoneMatch ? phoneMatch[0] : "+91-9569376728";
+  const phone = phoneMatch ? phoneMatch[0] : "+91-0000000000";
 
   // Deeper extraction for more content
   const sections = { objective: '', skills: [], experience: [], projects: [], education: [], certs: [], achievements: [] };
@@ -389,8 +389,8 @@ async function buildLocalFallbackResume(selfDescription, resume, jobDescription)
       <div class="header">
         <div class="name">${name}</div>
         <div class="contact">
-          Kanpur, Uttar Pradesh | ${phone} | <a href="mailto:${email}">${email}</a><br>
-          LinkedIn | GitHub | LeetCode | Portfolio
+          City, State | ${phone} | <a href="mailto:${email}">${email}</a><br>
+          LinkedIn | GitHub | Portfolio
         </div>
       </div>
 
@@ -411,31 +411,21 @@ async function buildLocalFallbackResume(selfDescription, resume, jobDescription)
         <div class="section-title">Experience & Projects</div>
         
         <div class="item-row">
-          <span class="item-left">FinTrack: Real-Time Analytics Engine</span>
-          <span class="item-right">July 2025 -- Sep 2025</span>
+          <span class="item-left">Project Title 1: Key Feature</span>
+          <span class="item-right">Month Year -- Month Year</span>
         </div>
         <ul class="bullet-list">
-          <li class="bullet">Built high-performance analytics to process large-scale user activity data.</li>
-          <li class="bullet">Designed MongoDB aggregation pipelines for P&L insights.</li>
-          <li class="bullet">Automated report generation using Puppeteer.</li>
+          <li class="bullet">Developed high-performance features using Node.js and React.</li>
+          <li class="bullet">Optimized database queries and improved system response time.</li>
         </ul>
 
         <div style="margin-top: 5px;" class="item-row">
-          <span class="item-left">YouHelper: AI Job Preparation Platform</span>
-          <span class="item-right">Jan 2026 -- Feb 2026</span>
+          <span class="item-left">Project Title 2: Technical Solution</span>
+          <span class="item-right">Month Year -- Month Year</span>
         </div>
         <ul class="bullet-list">
-          <li class="bullet">Built full-stack platform for automated resume analysis and interview prep.</li>
-          <li class="bullet">Integrated AI pipelines for personalized questions and feedback.</li>
-        </ul>
-
-        <div style="margin-top: 5px;" class="item-row">
-          <span class="item-left">Elyvo: Real-Time Interview Platform</span>
-          <span class="item-right">Oct 2025 -- Dec 2025</span>
-        </div>
-        <ul class="bullet-list">
-          <li class="bullet">Developed collaborative coding platform with real-time synchronization.</li>
-          <li class="bullet">Used WebSockets for low-latency multi-user sessions.</li>
+          <li class="bullet">Built a scalable full-stack platform for specialized user needs.</li>
+          <li class="bullet">Integrated third-party APIs and cloud services.</li>
         </ul>
 
         ${sections.projects.length > 0 ? sections.projects.slice(0, 8).map(p => `<div class="bullet">${p}</div>`).join('') : ''}
@@ -444,10 +434,10 @@ async function buildLocalFallbackResume(selfDescription, resume, jobDescription)
       <div class="section">
         <div class="section-title">Education</div>
         <div class="item-row">
-          <span class="item-left">B.Tech in Computer Science and Engineering</span>
+          <span class="item-left">Degree Name in Field of Study</span>
           <span class="item-right">2023 -- 2027</span>
         </div>
-        <div style="font-size: 12px;">Pranveer Singh Institute of Technology, Kanpur | 82.5%</div>
+        <div style="font-size: 12px;">University Name, Location | Grade/GPA</div>
       </div>
 
       <div class="section">
