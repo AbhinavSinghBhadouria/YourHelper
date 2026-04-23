@@ -13,9 +13,14 @@ app.use((req, res, next) => {
 app.use(express.json())
 app.use(require('cookie-parser')())
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true
 }))
+
+// Health Check for Keeping Render Awake
+app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "active", uptime: process.uptime() });
+});
 
 
 
