@@ -1,5 +1,6 @@
 const express = require("express")
 const authMiddleware = require("../middlewares/auth.middleware")
+const premiumMiddleware = require("../middlewares/premium.middleware")
 const interviewController = require("../controllers/interview.controller")
 const upload = require("../middlewares/file.middleware")
 const interviewRouter = express.Router()
@@ -25,4 +26,11 @@ interviewRouter.get("/", authMiddleware.authUser, interviewController.getAllInte
  */
 interviewRouter.get("/:id", authMiddleware.authUser, interviewController.getInterviewReportByIdController)
 
+
+/**
+ * @route GET /api/interview/:interviewReportId/download
+ * @description generate and download tailored resume PDF (Premium only)
+ * @access private
+ */
+interviewRouter.get("/:interviewReportId/download", authMiddleware.authUser, premiumMiddleware, interviewController.downloadResumePdfController)
 module.exports = interviewRouter

@@ -1,10 +1,12 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { InterviewContext } from "../interview.context";
 import { 
     getAllInterviewReports, 
     getInterviewReportById, 
-    generateInterviewReport 
+    generateInterviewReport,
+    downloadResumePdf
 } from "../services/interview.api.js";
 
 export const useInterview = () => {
@@ -29,6 +31,7 @@ export const useInterview = () => {
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.message || "Failed to generate report");
+            throw err;
         } finally {
             setLoading(false);
         }
@@ -64,9 +67,38 @@ export const useInterview = () => {
         }
     };
 
-    const getResumePdf = (id) => {
-        console.log("PDF download triggered for interview id:", id);
-        // Placeholder for future implementation
+    const getResumePdf = async (id) => {
+        try {
+            const blob = await downloadResumePdf(id);
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            
+            // Create a temporary anchor element for downloading
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Tailored_Resume_${id}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up
+            document.body.removeChild(link);
+            setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        } catch (err) {
+            // Handle specific status codes
+            const status = err.response?.status;
+            
+            if (status === 429) {
+                // AI Limit Reached - Handled silently with redirect
+                navigate("/error/ai-limit");
+            } else if (status === 403) {
+                // Premium Required - Handled silently with redirect
+                setError("Premium required for PDF downloads");
+                navigate("/pricing");
+            } else {
+                // Real unknown error - Log it
+                console.error("Download error:", err);
+                setError("Failed to download PDF");
+            }
+        }
     };
 
     return {

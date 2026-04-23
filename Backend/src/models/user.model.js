@@ -1,19 +1,23 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
-        unique: [true, "username already taken"],
         required: true,
+        unique: true,
+        trim: true,
+        minlength: 3
     },
     email: {
         type: String,
-        unique: [true, "email already exists"],
-        required: true
+        required: true,
+        unique: true,
+        trim: true,
+        lowercase: true
     },
     password: {
         type: String,
-        required: false
+        required: function () { return !this.googleId; }
     },
     googleId: {
         type: String,
@@ -27,8 +31,21 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["local", "google"],
         default: "local"
+    },
+    isPremium: {
+        type: Boolean,
+        default: false
+    },
+    plan: {
+        type: String,
+        enum: ["free", "pro"],
+        default: "free"
+    },
+    stripeCustomerId: {
+        type: String
     }
-})
+}, { timestamps: true });
 
-const userModel = mongoose.model("users", userSchema)
-module.exports = userModel
+const userModel = mongoose.model("user", userSchema);
+
+module.exports = userModel;

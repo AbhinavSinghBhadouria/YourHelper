@@ -14,7 +14,7 @@ export const useAuth = () => {
   const handleLogin = async ({ email, password }) => {
     try {
       setLoading(true);
-      const data = await login({ email, password });
+      const data = await login(email, password);
       setUser(data?.user || null);
       return data;
     } catch (err) {
@@ -29,7 +29,7 @@ export const useAuth = () => {
   const handleRegister = async ({ username, email, password }) => {
     try {
       setLoading(true);
-      const data = await register({ username, email, password });
+      const data = await register(username, email, password);
 
       // IMPORTANT: set user after register
       setUser(data?.user || null);
@@ -37,6 +37,31 @@ export const useAuth = () => {
       return data;
     } catch (err) {
       console.error("Register error:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (token) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUser(data?.user || null);
+        return data;
+      } else {
+        throw new Error(data.message || "Google login failed");
+      }
+    } catch (err) {
+      console.error("Google login error:", err);
+      setUser(null);
       throw err;
     } finally {
       setLoading(false);
@@ -73,7 +98,7 @@ export const useAuth = () => {
   useEffect(() => {
     const getAndSetUser = async () => {
       const data = await getMe()
-      setUser(data.user)
+      setUser(data?.user || null)   // safe: getMe() returns undefined on error
       setLoading(false)
     }
     getAndSetUser()
@@ -81,9 +106,12 @@ export const useAuth = () => {
 
   return {
     user,
+    setUser,
     loading,
+    setLoading,
     handleLogin,
     handleRegister,
+    handleGoogleLogin,
     handleLogout,
     fetchMe,
   };

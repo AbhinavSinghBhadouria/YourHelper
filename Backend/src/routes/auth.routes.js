@@ -42,4 +42,12 @@ authRouter.get("/get-me", authMiddleware.authUser, authController.getMeControlle
 authRouter.post("/google", authController.googleAuthController)
 
 
+/**
+ * @route PUT /api/auth/upgrade
+ * @description Upgrade user to Pro plan
+ * @access Private
+ */
+authRouter.put("/upgrade", authMiddleware.authUser, authController.upgradeUserController)
+
+
 module.exports = authRouter
