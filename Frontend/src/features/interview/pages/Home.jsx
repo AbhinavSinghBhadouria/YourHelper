@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react'
 import "../style/home.css"
 import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { useAuth } from '../../auth/hooks/useAuth'
 
 const Home = () => {
-
+    const { user } = useAuth()
     const { loading, generateReport, reports, getReports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
@@ -21,12 +23,12 @@ const Home = () => {
         const resumeFile = resumeInputRef.current?.files?.[ 0 ]
         
         if (!jobDescription || jobDescription.trim().length < 10) {
-            alert("Please provide a detailed job description (minimum 10 characters).")
+            toast.warning("Please provide a detailed job description (minimum 10 characters).")
             return
         }
 
         if (!resumeFile && (!selfDescription || selfDescription.trim().length < 10)) {
-            alert("Please either upload a resume or provide a detailed self-description.")
+            toast.warning("Please either upload a resume or provide a detailed self-description.")
             return
         }
 
@@ -39,7 +41,7 @@ const Home = () => {
             }
         } catch (error) {
             console.error("Failed to generate report:", error)
-            alert("Failed to generate report. Please try again.")
+            toast.error(error?.response?.data?.message || "Failed to generate report. Please try again.")
         }
     }
 
@@ -58,7 +60,18 @@ const Home = () => {
         <div className='home-page'>
             {/* Page Header */}
             <header className='page-header'>
-                <div className="top-badge">INTELLIGENT INTERVIEW PARTNER</div>
+                <div className="header-top-row">
+                    <div className="top-badge">INTELLIGENT INTERVIEW PARTNER</div>
+                    {user && (
+                        <div className={`plan-status-badge ${user.isPremium ? 'plan--pro' : 'plan--free'}`}>
+                            {user.isPremium ? 'PRO' : 'FREE'}
+                        </div>
+                    )}
+                    <button onClick={() => navigate('/analytics')} className="btn-analytics-link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                        Analytics Dashboard
+                    </button>
+                </div>
                 <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
                 <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
             </header>

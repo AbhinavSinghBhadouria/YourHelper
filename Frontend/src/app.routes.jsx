@@ -7,6 +7,9 @@ import Home from "./features/interview/pages/Home";
 import Interview from "./features/interview/pages/interview";
 import LandingPage from "./features/interview/pages/LandingPage";
 import Blog from "./features/interview/pages/Blog";
+import Pricing from "./features/interview/pages/Pricing";
+import Analytics from "./features/interview/pages/Analytics";
+import AILimitError from "./pages/AILimitError";
 
 export const router = createBrowserRouter([
   {
@@ -14,8 +17,27 @@ export const router = createBrowserRouter([
     element: <LandingPage />,
   },
   {
+    path: "/error/ai-limit",
+    element: <AILimitError />,
+  },
+  {
     path: "/blog",
     element: <Blog />,
+  },
+  {
+    path: "/pricing",
+    element: <Pricing />,
+  },
+  {
+    path: "/analytics",
+    element: (<Protected>
+      <Analytics />
+    </Protected>),
+  },
+  {
+    // Redirect /features → landing page until a Features page is built
+    path: "/features",
+    element: <Navigate to="/" replace />,
   },
   {
     path: "/login",

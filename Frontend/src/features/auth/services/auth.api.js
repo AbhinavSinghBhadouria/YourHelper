@@ -1,57 +1,48 @@
 import axios from "axios"
 
-const api =axios.create({
+const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
-    withCredentials:true
+    withCredentials: true
 })
 
-export async function register(username,email,password){
-    try{
-   const response = await api.post("/auth/register",{
-        username,email,password
-   })
+// Debug interceptors
+api.interceptors.request.use(config => {
+    console.log(`Auth API Request: ${config.method.toUpperCase()} ${config.url}`, config.data);
+    return config;
+});
 
-   
+api.interceptors.response.use(
+    response => {
+        console.log(`Auth API Success: ${response.config.url}`, response.data);
+        return response;
+    },
+    error => {
+        console.error(`Auth API Error: ${error.config?.url}`, error.response?.data || error.message);
+        return Promise.reject(error);
+    }
+);
+
+export async function register(username, email, password) {
+    const response = await api.post("/auth/register", { username, email, password })
     return response.data
-       }
-       catch(err){
-        console.log(err) 
-       }
 }
 
-
-export async function login(email,password){
-
-    try{
-        const response= await api.post("/auth/login",{
-            email,password
-        })
-        
-        return response.data
-    }
-    catch(err){
-        console.log(err)
-    }
+export async function login(email, password) {
+    const response = await api.post("/auth/login", { email, password })
+    return response.data
 }
 
-export async function logout(){
-    try{
-        const response = await api.get("/auth/logout"
-    )
-        return response.data
-    }
-    catch(err){
-        console.log(err)
-    }
+export async function logout() {
+    const response = await api.get("/auth/logout")
+    return response.data
 }
 
-export async function getMe(){
-    try{
-        const response = await api.get("/auth/get-me"
-        )
+export async function getMe() {
+    try {
+        const response = await api.get("/auth/get-me")
         return response.data
-    }
-    catch(err){
-        console.log(err)
+    } catch {
+        // Expected when not logged in — return undefined silently
+        return undefined
     }
 }

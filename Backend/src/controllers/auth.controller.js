@@ -15,8 +15,10 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 async function registerUserController(req, res) {
     try {
         const { username, email, password } = req.body
+        console.log("Registration attempt:", { username, email, hasPassword: !!password });
 
         if (!username || !password || !email) {
+            console.log("Registration failed: Missing fields");
             return res.status(400).json({
                 message: "All fields are required"
             })
@@ -27,6 +29,10 @@ async function registerUserController(req, res) {
         })
 
         if (isUserAlreadyExists) {
+            console.log("Registration failed: User/Email already exists", { 
+                usernameMatch: isUserAlreadyExists.username == username,
+                emailMatch: isUserAlreadyExists.email == email 
+            });
             if (isUserAlreadyExists.username == username) {
                 return res.status(400).json({
                     message: `${username} already exists`
@@ -60,7 +66,9 @@ async function registerUserController(req, res) {
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                plan: user.plan,
+                isPremium: user.isPremium
             }
         })
 
@@ -114,7 +122,9 @@ async function loginUserController(req, res) {
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                plan: user.plan,
+                isPremium: user.isPremium
             }
         })
 
@@ -167,7 +177,9 @@ async function getMeController(req, res) {
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                plan: user.plan,
+                isPremium: user.isPremium
             }
         })
 
@@ -243,7 +255,9 @@ async function googleAuthController(req, res) {
             user: {
                 id: user._id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                plan: user.plan,
+                isPremium: user.isPremium
             }
         })
 
@@ -253,10 +267,41 @@ async function googleAuthController(req, res) {
     }
 }
 
+/**
+ * @name upgradeUserController
+ * @description Upgrade user to Pro plan
+ * @access Private
+ */
+async function upgradeUserController(req, res) {
+    try {
+        const user = await userModel.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: "User not found" })
+
+        user.isPremium = true
+        user.plan = "pro"
+        await user.save()
+
+        res.status(200).json({
+            message: "Successfully upgraded to Pro!",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                plan: user.plan,
+                isPremium: user.isPremium
+            }
+        })
+    } catch (error) {
+        res.status(500).json({ message: error.message })
+    }
+}
+
+
 module.exports = {
     registerUserController,
     loginUserController,
     logoutUserController,
     getMeController,
-    googleAuthController
+    googleAuthController,
+    upgradeUserController
 }

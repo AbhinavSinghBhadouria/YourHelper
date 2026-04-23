@@ -1,8 +1,32 @@
 import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 const api = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
     withCredentials: true,
-})
+});
+
+// Debug interceptors
+api.interceptors.request.use(config => {
+    console.log(`Interview API Request: ${config.method.toUpperCase()} ${config.url}`, config.data instanceof FormData ? "FormData" : config.data);
+    return config;
+});
+
+api.interceptors.response.use(
+    response => {
+        console.log(`Interview API Success: ${response.config.url}`, response.data);
+        return response;
+    },
+    error => {
+        const status = error.response?.status;
+        // Don't log handled errors like 429 (AI Limit) or 403 (Premium) as "Errors" in console
+        if (status !== 429 && status !== 403) {
+            console.error(`Interview API Error: ${error.config?.url}`, error.response?.data || error.message);
+        }
+        return Promise.reject(error);
+    }
+);
 
 /**
  * @description Service to generate interview report base on user description, job Description and resume
@@ -15,32 +39,43 @@ export const generateInterviewReport = async ({ jobDescription, resumeFile, self
     const formData = new FormData()
     formData.append("jobDescription", jobDescription)
     formData.append("selfDescription", selfDescription)
-    formData.append("resume", resumeFile)
+    if (resumeFile) {
+        formData.append("resume", resumeFile)
+    }
 
-    const response = await api.post("/api/interview", formData, {
-        headers: {
-            "content-type": "multipart/form-data"
-        }
-    })
+    // Let Axios set the multipart boundary automatically.
+    const response = await api.post("/interview", formData)
 
     return response.data
 }
 
 /**
  * @description service to get interview report by interviewId
- * @param {*} interviewId 
- * @returns 
+ * @param {string} interviewId 
+ * @returns {Promise<Object>}
  */
 export const getInterviewReportById = async (interviewId) => {
-    const response = await api.get(`/api/interview/${interviewId}`)
+    const response = await api.get(`/interview/${interviewId}`)
     return response.data
 }
 
 /**
  * @description service to get all interview reports of user
- * @returns 
+ * @returns {Promise<Object>}
  */
 export const getAllInterviewReports = async () => {
-    const response = await api.get(`/api/interview`)
+    const response = await api.get(`/interview`)
+    return response.data
+}
+
+/**
+ * @description Service to download tailored resume PDF
+ * @param {string} interviewReportId 
+ * @returns {Promise<Blob>}
+ */
+export const downloadResumePdf = async (interviewReportId) => {
+    const response = await api.get(`/interview/${interviewReportId}/download`, {
+        responseType: "blob"
+    })
     return response.data
 }

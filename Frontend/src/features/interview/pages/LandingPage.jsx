@@ -1,23 +1,44 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import '../style/landing.css';
 
 const LandingPage = () => {
     const [jobDesc, setJobDesc] = useState('');
     const [keywords, setKeywords] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    const extractKeywords = () => {
+    const extractKeywords = async () => {
         if (!jobDesc) return;
-        const text = jobDesc.replace(/[.,:;()]/g, '');
-        const words = text.split(/\s+/);
+        setLoading(true);
+        setKeywords([]); // clear current
         
-        const ignoreList = ['the', 'and', 'or', 'a', 'to', 'of', 'in', 'for', 'with', 'on', 'is', 'at', 'as', 'by', 'an', 'be', 'this', 'we', 'you', 'are'];
-        const potentialKeywords = words.filter(word => 
-            word.length > 3 && !ignoreList.includes(word.toLowerCase())
-        );
-
-        const unique = [...new Set(potentialKeywords)].slice(0, 5);
-        setKeywords(unique);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/public/extract-keywords`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ jobDescription: jobDesc })
+            });
+            
+            const data = await res.json();
+            
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to extract keywords");
+            }
+            
+            if (data.keywords && data.keywords.length > 0) {
+                setKeywords(data.keywords);
+                // If the response is unusually fast, it might be the local fallback
+                // We could add a hidden flag in the response, but for now we'll just show results
+            } else {
+                toast.warning("Could not extract any specific keywords from this text.");
+            }
+        } catch (err) {
+            console.error("Extraction error:", err);
+            toast.error("An error occurred while analyzing the job description.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -164,19 +185,21 @@ const LandingPage = () => {
                     <div className="extractor-card-bottom">
                         <div className="status-indicator">
                             <div className="status-dot"></div>
-                            Ready Process. Enter text to start.
+                            {loading ? "Analyzing with AI..." : keywords.length > 0 ? "Extraction complete." : "Ready Process. Enter text to start."}
                         </div>
-                        <button className="extractor-btn" onClick={extractKeywords}>
-                            Extract Keywords
+                        <button className="extractor-btn" onClick={extractKeywords} disabled={loading}>
+                            {loading ? "Processing..." : "Extract Keywords"}
                         </button>
                     </div>
                 </div>
 
                 <div className="common-labels-section">
-                    <div className="common-labels-title">COMMON EXTRACTED LABELS</div>
+                    <div className="common-labels-title">
+                        {keywords.length > 0 ? "✨ AI EXTRACTED KEYWORDS" : "COMMON EXTRACTED LABELS"}
+                    </div>
                     <div className="keyword-tags">
                         {keywords.length > 0 ? (
-                            keywords.map((kw, i) => <span key={i} className="keyword-tag">{kw}</span>)
+                            keywords.map((kw, i) => <span key={i} className="keyword-tag active-tag">{kw}</span>)
                         ) : (
                             <>
                                 <span className="keyword-tag">Strategic Leadership</span>
@@ -190,26 +213,48 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Dummy Client Logos */}
+            {/* Trusted Companies */}
             <section className="client-logos">
-                <div className="dummy-logo"></div>
-                <div className="dummy-logo"></div>
-                <div className="dummy-logo"></div>
-                <div className="dummy-logo"></div>
-                <div className="dummy-logo"></div>
+                <div className="client-logo-text">Google</div>
+                <div className="client-logo-text">Microsoft</div>
+                <div className="client-logo-text">Meta</div>
+                <div className="client-logo-text">Amazon</div>
+                <div className="client-logo-text">Netflix</div>
             </section>
 
             {/* Clean Footer */}
             <footer className="landing-footer">
-                <div className="landing-logo" style={{fontSize: '1.2rem'}}>YourHelper</div>
-                <div className="footer-links">
-                    <Link to="#" className="footer-link">Privacy Policy</Link>
-                    <Link to="#" className="footer-link">Terms of Service</Link>
-                    <Link to="#" className="footer-link">Cookie Policy</Link>
+                <div className="footer-content">
+                    <div className="footer-brand">
+                        <div className="landing-logo" style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>YourHelper</div>
+                        <p className="footer-tagline">AI-powered career assistance for the modern professional.</p>
+                    </div>
+                    
+                    <div className="footer-links-grid">
+                        <div className="footer-group">
+                            <h4>Legal</h4>
+                            <Link to="#" className="footer-link">Privacy Policy</Link>
+                            <Link to="#" className="footer-link">Terms of Service</Link>
+                            <Link to="#" className="footer-link">Cookie Policy</Link>
+                        </div>
+                        <div className="footer-group">
+                            <h4>Company</h4>
+                            <Link to="#" className="footer-link">About Us</Link>
+                            <Link to="#" className="footer-link">Careers</Link>
+                            <Link to="#" className="footer-link">Contact</Link>
+                        </div>
+                        <div className="footer-group">
+                            <h4>Social</h4>
+                            <div className="footer-socials">
+                                <a href="#" className="social-link" title="Twitter">𝕏</a>
+                                <a href="#" className="social-link" title="LinkedIn">in</a>
+                                <a href="#" className="social-link" title="GitHub">gh</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="footer-socials">
-                    <div className="social-icon"></div>
-                    <div className="social-icon"></div>
+                <div className="footer-bottom">
+                    <p>&copy; {new Date().getFullYear()} YourHelper. All rights reserved.</p>
                 </div>
             </footer>
         </div>

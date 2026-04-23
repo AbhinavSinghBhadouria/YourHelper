@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import '../style/interview.scss'
 import { useInterview } from '../hooks/useInterview.js'
-import { useParams } from 'react-router'
-import { useNavigate } from 'react-router'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth/hooks/useAuth'
 
 
 const NAV_ITEMS = [
@@ -58,9 +58,17 @@ const RoadMapDay = ({ day }) => (
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const Interview = () => {
+    const { user } = useAuth()
     const [activeNav, setActiveNav] = useState('technical')
     const { report, getReportById, loading, getResumePdf } = useInterview()
     const { interviewId } = useParams()
+
+    // Fetch the report when navigating directly to this URL
+    useEffect(() => {
+        if (!report || report._id !== interviewId) {
+            getReportById(interviewId)
+        }
+    }, [interviewId])
 
     if (loading || !report) {
         return (
@@ -81,6 +89,11 @@ const Interview = () => {
                 {/* ── Left Nav ── */}
                 <nav className='interview-nav'>
                     <div className="nav-content">
+                        {user && (
+                            <div style={{ marginBottom: '1rem' }} className={`plan-status-badge ${user.isPremium ? 'plan--pro' : 'plan--free'}`}>
+                                {user.isPremium ? 'PRO' : 'FREE'} PLAN
+                            </div>
+                        )}
                         <p className='interview-nav__label'>Sections</p>
                         {NAV_ITEMS.map(item => (
                             <button
