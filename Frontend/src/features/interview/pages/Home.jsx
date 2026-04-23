@@ -201,7 +201,7 @@ const Home = () => {
                     <a href='#'>Terms of Service</a>
                     <a href='#'>Help Center</a>
                 </div>
-                <p className="footer-credits">© 2024 YourHelper • Powered by Gemini AI</p>
+                <p className="footer-credits">© 2026 YourHelper • Powered by Gemini AI</p>
             </footer>
         </div>
     )
