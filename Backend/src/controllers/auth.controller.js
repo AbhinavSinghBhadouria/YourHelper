@@ -6,6 +6,14 @@ const { OAuth2Client } = require("google-auth-library")
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
+// Centralized cookie configuration for production
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Required for cross-domain cookies
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+};
+
 
 /**
  * @name registerUserController
@@ -59,7 +67,7 @@ async function registerUserController(req, res) {
             { expiresIn: "1d" }
         )
 
-        res.cookie("token", token)
+        res.cookie("token", token, COOKIE_OPTIONS)
 
         res.status(201).json({
             message: "User registered successfully",
@@ -115,7 +123,7 @@ async function loginUserController(req, res) {
             { expiresIn: "1d" }
         )
 
-        res.cookie("token", token)
+        res.cookie("token", token, COOKIE_OPTIONS)
 
         res.status(200).json({
             message: "User logged in successfully",
@@ -146,7 +154,7 @@ async function logoutUserController(req, res) {
             await tokenBlacklistModel.create({ token })
         }
 
-        res.clearCookie("token")
+        res.clearCookie("token", COOKIE_OPTIONS)
 
         res.status(200).json({
             message: "Logged out successfully"
@@ -248,7 +256,7 @@ async function googleAuthController(req, res) {
             { expiresIn: "1d" }
         )
 
-        res.cookie("token", jwtToken)
+        res.cookie("token", jwtToken, COOKIE_OPTIONS)
 
         res.status(200).json({
             message: "Google login successful",
