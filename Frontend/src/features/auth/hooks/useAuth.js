@@ -15,6 +15,7 @@ export const useAuth = () => {
     try {
       setLoading(true);
       const data = await login(email, password);
+      if (data?.token) localStorage.setItem("auth_token", data.token);
       setUser(data?.user || null);
       return data;
     } catch (err) {
@@ -30,10 +31,8 @@ export const useAuth = () => {
     try {
       setLoading(true);
       const data = await register(username, email, password);
-
-      // IMPORTANT: set user after register
+      if (data?.token) localStorage.setItem("auth_token", data.token);
       setUser(data?.user || null);
-
       return data;
     } catch (err) {
       console.error("Register error:", err);
@@ -54,6 +53,7 @@ export const useAuth = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        if (data?.token) localStorage.setItem("auth_token", data.token);
         setUser(data?.user || null);
         return data;
       } else {
@@ -72,6 +72,7 @@ export const useAuth = () => {
     try {
       setLoading(true);
       await logout();
+      localStorage.removeItem("auth_token");
       setUser(null);
     } catch (err) {
       console.error("Logout error:", err);
