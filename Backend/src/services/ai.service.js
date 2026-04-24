@@ -4,26 +4,52 @@ const { zodToJsonSchema } = require("zod-to-json-schema")
 const puppeteer = require("puppeteer")
 const { extractKeywordsLocally } = require("../utils/keyword.util")
 
-// Support multiple API keys with Load Balancing
-const API_KEYS = (process.env.GOOGLE_GENAI_API_KEYS || process.env.GOOGLE_GENAI_API_KEY || "").split(",").map(k => k.trim()).filter(k => k);
+// Support multiple API keys with load balancing + retries.
+function getApiKeys() {
+  const raw =
+    process.env.GOOGLE_GENAI_API_KEYS ||
+    process.env.GEMINI_API_KEYS ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    "";
 
-/**
- * Returns a GoogleGenerativeAI instance using randomized load balancing
- * to minimize waiting time and spread load across keys.
- */
-function getAIInstance() {
-  if (API_KEYS.length === 0) return new GoogleGenerativeAI("");
-
-  // Pick a random key to spread load evenly
-  const randomIndex = Math.floor(Math.random() * API_KEYS.length);
-  console.log(`[AI SERVICE] Load Balancing: Using Key Index ${randomIndex}`);
-  return new GoogleGenerativeAI(API_KEYS[randomIndex]);
+  return raw
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
 }
 
-const MODEL =
-  process.env.GEMINI_MODEL ||
-  process.env.GOOGLE_GENAI_MODEL ||
-  "gemini-2.0-flash";
+function getModelCandidates() {
+  const preferred =
+    process.env.GEMINI_MODEL ||
+    process.env.GOOGLE_GENAI_MODEL ||
+    "gemini-2.0-flash";
+
+  // Try preferred first, then practical fallbacks.
+  return [...new Set([preferred, "gemini-2.0-flash", "gemini-1.5-flash"])];
+}
+
+/**
+ * Returns a GoogleGenerativeAI instance for one key.
+ */
+function getAIInstance(apiKey) {
+  return new GoogleGenerativeAI(apiKey || "");
+}
+
+const MODEL = getModelCandidates()[0];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractJsonObject(rawText) {
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Invalid AI response: no JSON object found");
+  }
+  return JSON.parse(jsonMatch[0]);
+}
 
 const interviewReportSchema = z.object({
   matchScore: z.number().describe("A score between 0 and 100 indicating how well candidate's portfolio scores on the required job level"),
@@ -67,49 +93,32 @@ function buildLocalFallbackInterviewReport({ resume = "", selfDescription = "", 
 
   const missing = [...jdSet].filter(k => !profileSet.has(k)).slice(0, 8);
 
-  const technicalQuestions = [
-    {
-      question: "Explain React rendering and reconciliation. When do you use memoization?",
-      intention: "Assess React fundamentals, performance mindset, and practical experience.",
-      answer: "Cover virtual DOM/reconciliation, re-render triggers, and when to use useMemo/useCallback/React.memo with real examples and trade-offs."
-    },
-    {
-      question: "How do you design a robust API layer in a React app?",
-      intention: "Evaluate architecture, error handling, caching, and maintainability.",
-      answer: "Discuss axios/fetch wrapper, auth credentials, retries, typed responses, centralized error handling, and request cancellation."
-    },
-    {
-      question: "How would you optimize a slow list rendering on the frontend?",
-      intention: "Assess performance debugging and optimization techniques.",
-      answer: "Mention profiling, memoization, virtualization, reducing renders, splitting components, and deferring heavy work."
-    },
-    {
-      question: "What are common CORS and cookie pitfalls in a SPA + backend setup?",
-      intention: "Test real-world debugging for auth + cross-origin.",
-      answer: "Explain withCredentials, SameSite, secure, Access-Control-Allow-Credentials, origin matching, and dev proxy setups."
-    },
-    {
-      question: "How do you validate and secure file uploads in Node/Express?",
-      intention: "Assess backend security fundamentals.",
-      answer: "Talk about multer limits, MIME validation, scanning, size limits, storage strategy, and avoiding processing untrusted input blindly."
-    }
-  ];
+  const dynamicFocus = [...new Set([...(overlap.slice(0, 4)), ...(missing.slice(0, 4))])].filter(Boolean);
+  const roleHint = jdKeywords.slice(0, 3).join(", ") || "the target role";
+
+  const technicalQuestions = (dynamicFocus.length ? dynamicFocus : ["system design", "performance", "testing", "debugging", "architecture"])
+    .slice(0, 5)
+    .map((topic) => ({
+      question: `How would you apply ${topic} in ${roleHint}? Explain your approach with a concrete example.`,
+      intention: `Evaluate depth in ${topic} and practical execution for this specific role.`,
+      answer: `Describe one real project, design decisions, trade-offs, and measurable outcomes tied to ${topic}.`
+    }));
 
   const behavioralQuestions = [
     {
-      question: "Tell me about a time you debugged a production issue with limited signals.",
-      intention: "Assess troubleshooting approach and ownership.",
-      answer: "Use STAR; explain hypothesis-driven debugging, instrumentation/logging, rollback strategy, and communication."
+      question: `Tell me about a time you quickly learned a missing skill (${missing[0] || "new domain skill"}) to meet a deadline.`,
+      intention: "Assess adaptability and growth under pressure.",
+      answer: "Use STAR and focus on learning plan, execution speed, and final impact."
     },
     {
-      question: "How do you handle ambiguous requirements from stakeholders?",
-      intention: "Assess communication and product thinking.",
-      answer: "Clarify success metrics, propose options with trade-offs, write down assumptions, and iterate with feedback."
+      question: "Describe a situation where requirements changed late. How did you reprioritize and communicate?",
+      intention: "Assess communication, planning, and stakeholder management.",
+      answer: "Explain trade-offs, impact analysis, and how you kept delivery predictable."
     },
     {
-      question: "Describe a conflict in a team and how you resolved it.",
-      intention: "Assess collaboration and maturity.",
-      answer: "Focus on listening, aligning on goals, proposing data-driven resolution, and documenting decisions."
+      question: "Tell me about a difficult bug or incident you owned end-to-end.",
+      intention: "Assess ownership and debugging discipline.",
+      answer: "Cover hypothesis, instrumentation, fix, prevention, and lessons learned."
     }
   ];
 
@@ -220,57 +229,76 @@ Resume: ${resume}
 Self Description: ${selfDescription}
 Job Description: ${jobDescription}
 `;
-  let attempts = 0;
-  const maxAttempts = API_KEYS.length > 0 ? API_KEYS.length : 2;
+  const apiKeys = getApiKeys();
+  const modelCandidates = getModelCandidates();
 
-  while (attempts < maxAttempts) {
-    try {
-      const aiInstance = getAIInstance();
-      
-      const model = aiInstance.getGenerativeModel({ model: MODEL });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const raw = response.text();
+  if (!apiKeys.length) {
+    console.warn("[AI SERVICE] No Gemini API key found. Falling back to local interview report generator.");
+    return buildLocalFallbackInterviewReport({ resume, selfDescription, jobDescription });
+  }
 
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error("Invalid AI response:\n" + raw);
+  const retriableStatuses = new Set([429, 500, 502, 503, 504]);
+  let sawRateLimit = false;
+  let lastError = null;
 
-      const data = JSON.parse(jsonMatch[0]);
-      const validated = interviewReportSchema.safeParse(data);
+  // Two passes: immediate + one short cooldown pass.
+  for (let pass = 0; pass < 2; pass++) {
+    for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
+      for (const modelName of modelCandidates) {
+        try {
+          console.log(`[AI SERVICE] Trying key ${keyIndex + 1}/${apiKeys.length} with model "${modelName}" (pass ${pass + 1})`);
+          const aiInstance = getAIInstance(apiKeys[keyIndex]);
+          const model = aiInstance.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          const data = extractJsonObject(response.text());
+          const validated = interviewReportSchema.safeParse(data);
 
-      if (!validated.success) {
-        throw new Error("AI output does not match the expected format");
+          if (!validated.success) {
+            throw new Error("AI output does not match the expected format");
+          }
+
+          return validated.data;
+        } catch (err) {
+          lastError = err;
+          const status = err?.status || err?.response?.status;
+          const message = err?.message || "Unknown Gemini error";
+
+          if (status === 429) {
+            sawRateLimit = true;
+          }
+
+          // Model not available for this key; try next model/key.
+          if (status === 404) {
+            console.warn(`[AI SERVICE] Model "${modelName}" unavailable for current key: ${message}`);
+            continue;
+          }
+
+          if (retriableStatuses.has(status)) {
+            console.warn(`[AI SERVICE] Retriable Gemini error (${status}): ${message}`);
+            continue;
+          }
+
+          const e = new Error(`Gemini request failed: ${message}`);
+          e.status = status || 502;
+          throw e;
+        }
       }
+    }
 
-      return validated.data;
-    } catch (err) {
-      attempts++;
-      const status = err?.status || err?.response?.status;
+    if (pass === 0) {
+      await sleep(800);
+    }
+  }
 
-      if (status === 429 && attempts < maxAttempts) {
-        console.warn(`[AI SERVICE] Rate limit hit. Retrying with a different key... (Attempt ${attempts})`);
-        continue;
-      }
+  if (sawRateLimit) {
+    console.warn("[AI SERVICE] All Gemini API keys/models are currently rate-limited. Falling back to local interview report generator.");
+    return buildLocalFallbackInterviewReport({ resume, selfDescription, jobDescription });
+  }
 
-      if (status === 429) {
-        console.warn("[AI SERVICE] All Gemini API keys exhausted. Falling back to local interview report generator.");
-        return buildLocalFallbackInterviewReport({ resume, selfDescription, jobDescription });
-      }
-
-      if (status === 404) {
-        const e = new Error(
-          `Gemini model/endpoint not found (model="${MODEL}"). ` +
-          `Update GEMINI_MODEL or verify your API key has access. Original error: ${message}`
-        );
-        e.status = 502;
-        throw e;
-      }
-
-      const e = new Error(`Gemini request failed: ${message}`);
-      e.status = status || 502;
-      throw e;
-    } // End of catch
-  } // End of while loop
+  const finalError = new Error(`Gemini request failed after trying all keys/models: ${lastError?.message || "Unknown error"}`);
+  finalError.status = lastError?.status || lastError?.response?.status || 502;
+  throw finalError;
 } // End of generateInterviewReport function
 
 async function generateResumePdf(selfDescription, resume, jobDescription) {
@@ -292,13 +320,23 @@ async function generateResumePdf(selfDescription, resume, jobDescription) {
                         
                         Output Format: Return ONLY valid JSON: {"html": "<complete_html_string>"}`;
 
+  const apiKeys = getApiKeys();
+  if (!apiKeys.length) {
+    const aiError = new Error("No Gemini API key configured");
+    aiError.status = 500;
+    throw aiError;
+  }
+
+  const modelCandidates = getModelCandidates();
   let attempts = 0;
-  const maxAttempts = API_KEYS.length > 1 ? API_KEYS.length : 2;
+  const maxAttempts = Math.max(apiKeys.length * modelCandidates.length, 2);
 
   while (attempts < maxAttempts) {
     try {
-      const aiInstance = getAIInstance();
-      const model = aiInstance.getGenerativeModel({ model: MODEL });
+      const keyIndex = attempts % apiKeys.length;
+      const modelName = modelCandidates[Math.floor(attempts / apiKeys.length) % modelCandidates.length];
+      const aiInstance = getAIInstance(apiKeys[keyIndex]);
+      const model = aiInstance.getGenerativeModel({ model: modelName });
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -466,7 +504,11 @@ async function extractKeywordsFromJD(jobDescription) {
   Format: ["Keyword1", "Keyword2", ... "KeywordN"]`;
 
   try {
-    const aiInstance = getAIInstance();
+    const apiKeys = getApiKeys();
+    if (!apiKeys.length) {
+      throw new Error("No Gemini API key configured");
+    }
+    const aiInstance = getAIInstance(apiKeys[0]);
     const model = aiInstance.getGenerativeModel({ model: MODEL });
 
     const result = await model.generateContent(prompt);
