@@ -83,3 +83,15 @@ export const downloadResumePdf = async (interviewReportId) => {
     })
     return response.data
 }
+
+export const downloadResumePdfFromPayload = async ({ interviewReportId, resume, selfDescription, jobDescription }) => {
+    const response = await api.post("/interview/download", {
+        interviewReportId,
+        resume,
+        selfDescription,
+        jobDescription
+    }, {
+        responseType: "blob"
+    });
+    return response.data;
+}

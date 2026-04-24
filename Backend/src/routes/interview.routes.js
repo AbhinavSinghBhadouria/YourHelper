@@ -20,6 +20,13 @@ interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), inte
 interviewRouter.get("/", authMiddleware.authUser, interviewController.getAllInterviewReportsController)
 
 /**
+ * @route POST /api/interview/download
+ * @description generate and download tailored resume PDF from request payload (Premium only)
+ * @access private
+ */
+interviewRouter.post("/download", authMiddleware.authUser, premiumMiddleware, interviewController.downloadResumePdfFromPayloadController)
+
+/**
  * @route GET /api/interview/:id
  * @description get interview report by its id
  * @access private

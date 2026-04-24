@@ -190,9 +190,46 @@ async function downloadResumePdfController(req, res) {
     }
 }
 
+async function downloadResumePdfFromPayloadController(req, res) {
+    try {
+        const { resume, jobDescription, selfDescription, interviewReportId } = req.body || {};
+        const normalizedJobDescription = typeof jobDescription === "string" ? jobDescription.trim() : "";
+        const normalizedResume = typeof resume === "string" ? resume : "";
+        const normalizedSelfDescription = typeof selfDescription === "string" ? selfDescription : "";
+
+        if (!normalizedJobDescription) {
+            return res.status(400).json({ message: "Job description is required to generate resume PDF" });
+        }
+
+        if (!normalizedResume.trim() && !normalizedSelfDescription.trim()) {
+            return res.status(400).json({ message: "Either resume text or self-description is required" });
+        }
+
+        console.log("Generating tailored resume PDF via payload fallback...");
+        const pdfBuffer = await generateResumePdf(normalizedSelfDescription, normalizedResume, normalizedJobDescription);
+        const fileId = interviewReportId || Date.now().toString();
+
+        res.set({
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename=Tailored_Resume_${fileId}.pdf`,
+            "Content-Length": pdfBuffer.length
+        });
+
+        res.send(pdfBuffer);
+    } catch (error) {
+        console.error("Error generating PDF from payload:", error);
+        const statusCode = error.status || 500;
+        res.status(statusCode).json({
+            message: "Error generating tailored resume PDF: " + error.message,
+            error: error.message
+        });
+    }
+}
+
 module.exports = {
     generateInterViewReportController,
     getInterviewReportByIdController,
     getAllInterviewReportsController,
-    downloadResumePdfController
+    downloadResumePdfController,
+    downloadResumePdfFromPayloadController
 }

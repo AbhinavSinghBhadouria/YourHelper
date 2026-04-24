@@ -6,7 +6,8 @@ import {
     getAllInterviewReports, 
     getInterviewReportById, 
     generateInterviewReport,
-    downloadResumePdf
+    downloadResumePdf,
+    downloadResumePdfFromPayload
 } from "../services/interview.api.js";
 
 export const useInterview = () => {
@@ -69,9 +70,24 @@ export const useInterview = () => {
         }
     };
 
-    const getResumePdf = async (id) => {
+    const getResumePdf = async (reportInput) => {
+        const id = typeof reportInput === "string" ? reportInput : reportInput?._id;
         try {
-            const blob = await downloadResumePdf(id);
+            let blob = null;
+            try {
+                blob = await downloadResumePdf(id);
+            } catch (primaryErr) {
+                if (primaryErr?.response?.status !== 404 || !reportInput || typeof reportInput === "string") {
+                    throw primaryErr;
+                }
+                // Fallback path when the report document id is missing/stale in DB.
+                blob = await downloadResumePdfFromPayload({
+                    interviewReportId: reportInput?._id,
+                    resume: reportInput?.resume || "",
+                    selfDescription: reportInput?.selfDescription || "",
+                    jobDescription: reportInput?.jobDescription || ""
+                });
+            }
             const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
             
             // Create a temporary anchor element for downloading
