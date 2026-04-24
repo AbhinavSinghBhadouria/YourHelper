@@ -74,20 +74,20 @@ export const useInterview = () => {
         const id = typeof reportInput === "string" ? reportInput : reportInput?._id;
         try {
             let blob = null;
-            try {
-                blob = await downloadResumePdf(id);
-            } catch (primaryErr) {
-                if (primaryErr?.response?.status !== 404 || !reportInput || typeof reportInput === "string") {
-                    throw primaryErr;
-                }
-                // Fallback path when the report document id is missing/stale in DB.
+            const hasReportPayload = !!reportInput && typeof reportInput !== "string";
+
+            // Prefer payload-based download when report is loaded in memory.
+            if (hasReportPayload) {
                 blob = await downloadResumePdfFromPayload({
                     interviewReportId: reportInput?._id,
                     resume: reportInput?.resume || "",
                     selfDescription: reportInput?.selfDescription || "",
                     jobDescription: reportInput?.jobDescription || ""
                 });
+            } else {
+                blob = await downloadResumePdf(id);
             }
+
             const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
             
             // Create a temporary anchor element for downloading
