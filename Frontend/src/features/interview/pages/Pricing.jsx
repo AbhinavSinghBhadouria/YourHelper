@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { upgradeToPro } from '../../auth/services/auth.api';
 import '../style/pricing.css';
 
 const PLANS = [
@@ -133,21 +134,13 @@ const Pricing = () => {
         
         setUpgrading(true);
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/upgrade`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-            });
-            const data = await res.json();
-            if (res.ok) {
-                toast.success("Welcome to Pro! 🚀");
-                setUser(data.user);
-                setTimeout(() => navigate("/dashboard"), 1500);
-            } else {
-                toast.error(data.message || "Upgrade failed");
-            }
+            const data = await upgradeToPro();
+            toast.success("Welcome to Pro! 🚀");
+            setUser(data.user);
+            setTimeout(() => navigate("/dashboard"), 1500);
         } catch (err) {
             console.error("Upgrade error:", err);
-            toast.error("Failed to process upgrade.");
+            toast.error(err.response?.data?.message || "Failed to process upgrade.");
         } finally {
             setUpgrading(false);
         }

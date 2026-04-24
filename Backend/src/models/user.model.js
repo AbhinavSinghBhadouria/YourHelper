@@ -43,6 +43,12 @@ const userSchema = new mongoose.Schema({
     },
     stripeCustomerId: {
         type: String
+    },
+    trialStartedAt: {
+        type: Date
+    },
+    trialEndsAt: {
+        type: Date
     }
 }, { timestamps: true });
 

@@ -77,7 +77,9 @@ async function registerUserController(req, res) {
                 username: user.username,
                 email: user.email,
                 plan: user.plan,
-                isPremium: user.isPremium
+                isPremium: user.isPremium,
+                trialStartedAt: user.trialStartedAt,
+                trialEndsAt: user.trialEndsAt
             }
         })
 
@@ -134,7 +136,9 @@ async function loginUserController(req, res) {
                 username: user.username,
                 email: user.email,
                 plan: user.plan,
-                isPremium: user.isPremium
+                isPremium: user.isPremium,
+                trialStartedAt: user.trialStartedAt,
+                trialEndsAt: user.trialEndsAt
             }
         })
 
@@ -189,7 +193,9 @@ async function getMeController(req, res) {
                 username: user.username,
                 email: user.email,
                 plan: user.plan,
-                isPremium: user.isPremium
+                isPremium: user.isPremium,
+                trialStartedAt: user.trialStartedAt,
+                trialEndsAt: user.trialEndsAt
             }
         })
 
@@ -268,7 +274,9 @@ async function googleAuthController(req, res) {
                 username: user.username,
                 email: user.email,
                 plan: user.plan,
-                isPremium: user.isPremium
+                isPremium: user.isPremium,
+                trialStartedAt: user.trialStartedAt,
+                trialEndsAt: user.trialEndsAt
             }
         })
 
@@ -288,18 +296,41 @@ async function upgradeUserController(req, res) {
         const user = await userModel.findById(req.user.id)
         if (!user) return res.status(404).json({ message: "User not found" })
 
+        // If user already has an active trial/pro access, avoid resetting the window.
+        if (user.isPremium && user.trialEndsAt && new Date(user.trialEndsAt) > new Date()) {
+            return res.status(200).json({
+                message: "Pro trial already active",
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    plan: user.plan,
+                    isPremium: user.isPremium,
+                    trialStartedAt: user.trialStartedAt,
+                    trialEndsAt: user.trialEndsAt
+                }
+            })
+        }
+
+        const trialStartedAt = new Date()
+        const trialEndsAt = new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000)
+
         user.isPremium = true
         user.plan = "pro"
+        user.trialStartedAt = trialStartedAt
+        user.trialEndsAt = trialEndsAt
         await user.save()
 
         res.status(200).json({
-            message: "Successfully upgraded to Pro!",
+            message: "7-day Pro trial started successfully!",
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
                 plan: user.plan,
-                isPremium: user.isPremium
+                isPremium: user.isPremium,
+                trialStartedAt: user.trialStartedAt,
+                trialEndsAt: user.trialEndsAt
             }
         })
     } catch (error) {

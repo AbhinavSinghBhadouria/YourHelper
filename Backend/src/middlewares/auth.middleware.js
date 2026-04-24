@@ -33,6 +33,15 @@ async function authUser(req, res, next) {
             return res.status(401).json({ message: "User no longer exists" })
         }
 
+        // Auto-expire trial access and normalize account back to free plan.
+        if (user.trialEndsAt && new Date(user.trialEndsAt) <= new Date() && user.isPremium) {
+            user.isPremium = false
+            user.plan = "free"
+            user.trialStartedAt = null
+            user.trialEndsAt = null
+            await user.save()
+        }
+
         req.user = user
         next()
     } catch (err) {

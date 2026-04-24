@@ -48,6 +48,11 @@ export async function logout() {
     return response.data
 }
 
+export async function upgradeToPro() {
+    const response = await api.put("/auth/upgrade")
+    return response.data
+}
+
 export async function getMe() {
     try {
         const response = await api.get("/auth/get-me", { silentAuthError: true })
