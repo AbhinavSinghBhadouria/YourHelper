@@ -98,9 +98,16 @@ export const useAuth = () => {
 
   useEffect(() => {
     const getAndSetUser = async () => {
-      const data = await getMe()
-      setUser(data?.user || null)   // safe: getMe() returns undefined on error
-      setLoading(false)
+      const token = localStorage.getItem("auth_token");
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const data = await getMe();
+      setUser(data?.user || null); // safe: getMe() returns undefined on error
+      setLoading(false);
     }
     getAndSetUser()
   }, [])

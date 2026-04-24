@@ -21,7 +21,14 @@ api.interceptors.response.use(
         return response;
     },
     error => {
-        console.error(`Auth API Error: ${error.config?.url}`, error.response?.data || error.message);
+        const isSilentUnauthorizedGetMe =
+            error.config?.silentAuthError &&
+            error.config?.url?.includes("/auth/get-me") &&
+            error.response?.status === 401;
+
+        if (!isSilentUnauthorizedGetMe) {
+            console.error(`Auth API Error: ${error.config?.url}`, error.response?.data || error.message);
+        }
         return Promise.reject(error);
     }
 );
@@ -43,7 +50,7 @@ export async function logout() {
 
 export async function getMe() {
     try {
-        const response = await api.get("/auth/get-me")
+        const response = await api.get("/auth/get-me", { silentAuthError: true })
         return response.data
     } catch {
         // Expected when not logged in — return undefined silently
