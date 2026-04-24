@@ -40,6 +40,7 @@ export const useInterview = () => {
     const getReportById = async (interviewId) => {
         setLoading(true);
         setError(null);
+        setReport(null);
         try {
             const response = await getInterviewReportById(interviewId);
             setReport(response.interviewReport);
@@ -47,6 +48,7 @@ export const useInterview = () => {
         } catch (err) {
             console.error(err);
             setError(err.response?.data?.message || "Failed to fetch report");
+            return null;
         } finally {
             setLoading(false);
         }
