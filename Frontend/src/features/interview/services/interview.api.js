@@ -7,8 +7,12 @@ const api = axios.create({
     withCredentials: true,
 });
 
-// Debug interceptors
+// Inject token from localStorage as Bearer on every request
 api.interceptors.request.use(config => {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     console.log(`Interview API Request: ${config.method.toUpperCase()} ${config.url}`, config.data instanceof FormData ? "FormData" : config.data);
     return config;
 });
